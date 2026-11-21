@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Notes Summarizer - Learnova</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .tool { max-width: 800px; margin: 40px auto; padding: 0 20px; font-family: sans-serif; }
+        .tool textarea { width: 100%; height: 200px; padding: 12px; box-sizing: border-box; }
+        .tool .row { margin: 12px 0; }
+        .tool button { padding: 10px 20px; cursor: pointer; }
+        #result { display: none; margin-top: 24px; padding: 16px; border: 1px solid #ccc; border-radius: 8px; }
+        #error { color: #c0392b; margin-top: 12px; }
+    </style>
+</head>
+<body>
+    <div class="tool">
+        <p><a href="/dashboard">&larr; Back to dashboard</a></p>
+        <h1>Notes Summarizer</h1>
+        <p>Paste your notes or upload a PDF to get a summary and key points.</p>
+
+        <div class="row">
+            <textarea id="notes" placeholder="Paste your notes here..."></textarea>
+        </div>
+        <div class="row">
+            <label>Or upload a PDF: <input type="file" id="pdf" accept=".pdf"></label>
+        </div>
+        <button id="go">Summarize</button>
+        <div id="error"></div>
+
+        <div id="result">
+            <h2>Summary</h2>
+            <p id="summary"></p>
+            <h2>Key points</h2>
+            <ul id="points"></ul>
+        </div>
+    </div>
+
+    <script>
+        const btn = document.getElementById("go");
+        const errorBox = document.getElementById("error");
+        const resultBox = document.getElementById("result");
+
+        btn.addEventListener("click", async () => {
+            errorBox.textContent = "";
+            resultBox.style.display = "none";
+
+            const formData = new FormData();
+            formData.append("text", document.getElementById("notes").value);
+            const file = document.getElementById("pdf").files[0];
+            if (file) formData.append("pdf", file);
+
+            btn.disabled = true;
+            btn.textContent = "Summarizing...";
+
+            try {
+                const res = await fetch("/api/summarize", { method: "POST", body: formData });
+                const data = await res.json();
+
+                if (!res.ok) {
+                    errorBox.textContent = data.error || "Something went wrong.";
+                } else {
+                    document.getElementById("summary").textContent = data.summary;
+                    const list = document.getElementById("points");
+                    list.innerHTML = "";
+                    data.key_points.forEach(p => {
+                        const li = document.createElement("li");
+                        li.textContent = p;
+                        list.appendChild(li);
+                    });
+                    resultBox.style.display = "block";
+                }
+            } catch (e) {
+                errorBox.textContent = "Could not reach the server.";
+            }
+
+            btn.disabled = false;
+            btn.textContent = "Summarize";
+        });
+    </script>
+</body>
+</html>
