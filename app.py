@@ -371,4 +371,4 @@ def api_summarize():
 
     return jsonify(summary=summary, key_points=key_points)
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, use_reloader=False)
