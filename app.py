@@ -681,4 +681,4 @@ def file_too_large(e):
     return redirect(url_for("profile"))
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, use_reloader=False)
