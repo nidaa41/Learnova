@@ -13,7 +13,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
     document.getElementById("userName").textContent = firstName;
     document.getElementById("profileName").textContent = fullName;
-    document.getElementById("avatar").textContent = initials || "S";
+    const avatarEl = document.getElementById("avatar");
+    if (!avatarEl.querySelector("img")) {
+        avatarEl.textContent = initials || "S"; // only show initials when there's no photo
+    }
 
     // ----- Greeting based on time of day -----
     const hour = new Date().getHours();

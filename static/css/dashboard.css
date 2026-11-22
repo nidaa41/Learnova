@@ -670,3 +670,29 @@
         display: none;
     }
 }
+a.avatar {
+    text-decoration: none;
+    overflow: hidden;
+}
+
+.avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Whole profile block is clickable */
+a.profile {
+    text-decoration: none;
+    padding: 4px 10px 4px 4px;
+    border-radius: 30px;
+    transition: background 0.2s;
+}
+
+a.profile:hover {
+    background: var(--bg);
+}
+
+a.profile:hover .profile-name {
+    color: var(--primary);
+}

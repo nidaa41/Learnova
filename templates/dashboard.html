@@ -12,6 +12,7 @@
 
     <!-- ===== Icon library (hidden, reused below with <use>) ===== -->
     <svg style="display:none">
+        <symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
         <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
         <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
         <symbol id="i-notes" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></symbol>
@@ -43,7 +44,7 @@
             <a href="/summarizer" class="side-link">
     <svg class="ic"><use href="#i-notes"/></svg><span>Notes Summarizer</span>
 </a>
-            <a href="quiz.html" class="side-link">
+            <a href="/quiz" class="side-link">
                 <svg class="ic"><use href="#i-quiz"/></svg><span>Quiz Generator</span>
             </a>
             <a href="explainer.html" class="side-link">
@@ -52,8 +53,8 @@
         </nav>
 
         <div class="side-bottom">
-            <a href="#" class="side-link">
-                <svg class="ic"><use href="#i-settings"/></svg><span>Settings</span>
+            <a href="/profile" class="side-link">
+                <svg class="ic"><use href="#i-user"/></svg><span>Profile</span>
             </a>
             <a href="/logout" class="side-link logout" id="logoutBtn">
                 <svg class="ic"><use href="#i-logout"/></svg><span>Logout</span>
@@ -91,11 +92,15 @@
                 </button>
 
                 <div class="profile">
-                    <div class="avatar" id="avatar">S</div>
-                    <div class="profile-text">
-                        <span class="profile-name" id="profileName">Student</span>
-                        <span class="profile-role">Learner</span>
-                    </div>
+                    <a href="/profile" class="profile" title="View profile">
+                        <div class="avatar" id="avatar">
+                            {% if avatar %}<img src="/my-avatar?v={{ avatar }}" alt="Your photo">{% else %}S{% endif %}
+                        </div>
+                        <div class="profile-text">
+                            <span class="profile-name" id="profileName">Student</span>
+                            <span class="profile-role">Learner</span>
+                        </div>
+                    </a>
                 </div>
             </div>
         </header>
@@ -135,14 +140,14 @@
                 <div class="stat-card">
                     <div class="icon-box sm icon-quiz"><svg class="ic"><use href="#i-quiz"/></svg></div>
                     <div>
-                        <div class="stat-value" id="statQuizzes">0</div>
+                        <div class="stat-value" id="statQuizzes">{{ quizzes_taken }}</div>
                         <div class="stat-label">Quizzes taken</div>
                     </div>
                 </div>
                 <div class="stat-card">
                     <div class="icon-box sm icon-score"><svg class="ic"><use href="#i-trophy"/></svg></div>
                     <div>
-                        <div class="stat-value" id="statScore">–</div>
+                        <div class="stat-value" id="statScore">{% if avg_score is not none %}{{ avg_score }}%{% else %}–{% endif %}</div>
                         <div class="stat-label">Average score</div>
                     </div>
                 </div>
@@ -163,7 +168,7 @@
                     <p>Turn long notes into short summaries and key points.</p>
                     <span class="tool-open">Open <svg class="ic"><use href="#i-arrow"/></svg></span>
                 </a>
-                <a href="quiz.html" class="tool-card">
+                <a href="/quiz" class="tool-card">
                     <div class="icon-box icon-quiz"><svg class="ic"><use href="#i-quiz"/></svg></div>
                     <h3>Quiz Generator</h3>
                     <p>Create practice quizzes from any topic and test yourself.</p>
