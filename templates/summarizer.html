@@ -7,18 +7,19 @@
     <link rel="stylesheet" href="/static/css/style.css">
     <link rel="stylesheet" href="/static/css/dashboard.css">
     <link rel="stylesheet" href="/static/css/summarizer.css">
+    <link rel="stylesheet" href="/static/css/summary-history.css">
     <script src="/static/js/theme.js"></script>
 </head>
 <body class="dash-body" data-user="{{ name }}">
 
     <!-- ===== Icon library ===== -->
     <svg style="display:none">
+        <symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
         <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
         <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
         <symbol id="i-notes" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></symbol>
         <symbol id="i-quiz" viewBox="0 0 24 24"><path d="M20 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/><path d="M8 11l3 3 9-9"/></symbol>
         <symbol id="i-idea" viewBox="0 0 24 24"><path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2V17h6v-.3c0-.8.4-1.5 1-2A7 7 0 0 0 12 2z"/></symbol>
-        <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></symbol>
         <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></symbol>
         <symbol id="i-menu" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></symbol>
         <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/></symbol>
@@ -40,17 +41,17 @@
             <a href="/summarizer" class="side-link active">
                 <svg class="ic"><use href="#i-notes"/></svg><span>Notes Summarizer</span>
             </a>
-            <a href="quiz.html" class="side-link">
+            <a href="/quiz" class="side-link">
                 <svg class="ic"><use href="#i-quiz"/></svg><span>Quiz Generator</span>
             </a>
-            <a href="explainer.html" class="side-link">
+            <a href="/explainer" class="side-link">
                 <svg class="ic"><use href="#i-idea"/></svg><span>Concept Explainer</span>
             </a>
         </nav>
 
         <div class="side-bottom">
-            <a href="#" class="side-link">
-                <svg class="ic"><use href="#i-settings"/></svg><span>Settings</span>
+            <a href="/profile" class="side-link">
+                <svg class="ic"><use href="#i-user"/></svg><span>Profile</span>
             </a>
             <a href="/logout" class="side-link logout" id="logoutBtn">
                 <svg class="ic"><use href="#i-logout"/></svg><span>Logout</span>
@@ -76,13 +77,19 @@
                     </span>
                 </button>
 
-                <div class="profile">
-                    <div class="avatar" id="avatar">S</div>
+                <a href="/profile" class="profile" title="View profile">
+                    <div class="avatar" id="avatar">
+                        {% if avatar %}
+                            <img src="/my-avatar?v={{ avatar }}" alt="Your photo">
+                        {% else %}
+                            {{ (name.split() | map('first') | join)[:2] | upper }}
+                        {% endif %}
+                    </div>
                     <div class="profile-text">
-                        <span class="profile-name" id="profileName">Student</span>
+                        <span class="profile-name" id="profileName">{{ name }}</span>
                         <span class="profile-role">Learner</span>
                     </div>
-                </div>
+                </a>
             </div>
         </header>
 
@@ -174,10 +181,48 @@
                     </div>
                 </section>
 
+                <!-- History: inside the grid, full-width row below both cards -->
+                <section class="sh-card">
+                    <div class="sh-head">
+                        <h3>History</h3>
+                        <span class="sh-count" id="shCount"></span>
+                    </div>
+                    <div class="sh-list" id="shList">
+                        <p class="sh-empty">Loading...</p>
+                    </div>
+                </section>
+
             </div>
         </main>
     </div>
 
+    <!-- ===== Summary viewer (popup, can stay outside the main area) ===== -->
+    <div class="sh-overlay" id="shOverlay">
+        <div class="sh-modal" role="dialog" aria-modal="true" aria-labelledby="shModalTitle">
+            <div class="sh-modal-head">
+                <div>
+                    <h3 id="shModalTitle">Summary</h3>
+                    <span class="sh-date" id="shModalDate"></span>
+                </div>
+                <button class="sh-close" id="shClose" aria-label="Close">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <div class="sh-modal-body">
+                <p class="sh-summary" id="shSummary"></p>
+                <h4 class="sh-kp-title" id="shKpTitle">Key points</h4>
+                <ul class="sh-kp" id="shKeyPoints"></ul>
+            </div>
+
+            <div class="sh-modal-foot">
+                <button class="sh-btn danger" id="shDelete">Delete</button>
+                <button class="sh-btn primary" id="shCopy">Copy summary</button>
+            </div>
+        </div>
+    </div>
+
     <script src="/static/js/summarizer.js"></script>
+    <script src="/static/js/summary-history.js"></script>
 </body>
 </html>

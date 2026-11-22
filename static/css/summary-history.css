@@ -1,0 +1,286 @@
+/* ===== Summary history list ===== */
+.sh-card {
+    max-width: 760px;
+    margin: 24px auto;
+    padding: 26px;
+    border-radius: 20px;
+    background: var(--card);
+    box-shadow: 0 4px 18px var(--shadow);
+    transition: background 0.3s;
+}
+
+.sh-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+}
+
+.sh-head h3 {
+    font-size: 18px;
+    color: var(--text);
+}
+
+.sh-count {
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: rgba(0, 184, 148, 0.12);
+    color: #00b894;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.sh-count:empty {
+    display: none;
+}
+
+.sh-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 420px;
+    overflow-y: auto;
+}
+
+.sh-empty {
+    padding: 14px 4px;
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.sh-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    padding: 12px;
+    border: 1.5px solid transparent;
+    border-radius: 12px;
+    background: none;
+    color: var(--text);
+    text-align: left;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.sh-item:hover {
+    background: var(--bg);
+}
+
+.sh-item.active {
+    border-color: #00b894;
+    background: rgba(0, 184, 148, 0.08);
+}
+
+.sh-item > svg {
+    width: 38px;
+    height: 38px;
+    padding: 9px;
+    flex-shrink: 0;
+    border-radius: 11px;
+    background: linear-gradient(135deg, #00b894, #55efc4);
+    color: white;
+}
+
+.sh-item-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.sh-item-text strong {
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: 14.5px;
+}
+
+.sh-item-text small {
+    font-size: 12.5px;
+    color: var(--muted);
+}
+
+/* ===== Viewer panel ===== */
+.sh-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+}
+
+.sh-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.sh-modal {
+    width: 100%;
+    max-width: 640px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    border-radius: 20px;
+    background: var(--card);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    transform: translateY(20px) scale(0.97);
+    transition: transform 0.25s;
+}
+
+.sh-overlay.open .sh-modal {
+    transform: translateY(0) scale(1);
+}
+
+.sh-modal-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 22px 24px 16px;
+    border-bottom: 1px solid var(--border);
+}
+
+.sh-modal-head h3 {
+    font-size: 19px;
+    color: var(--text);
+}
+
+.sh-date {
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.sh-close {
+    width: 36px;
+    height: 36px;
+    padding: 8px;
+    flex-shrink: 0;
+    border: none;
+    border-radius: 10px;
+    background: var(--bg);
+    color: var(--text);
+    cursor: pointer;
+}
+
+.sh-close:hover {
+    color: #e74c3c;
+}
+
+.sh-modal-body {
+    padding: 20px 24px;
+    overflow-y: auto;
+}
+
+.sh-summary {
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--text);
+    white-space: pre-wrap;
+}
+
+.sh-kp-title {
+    margin: 22px 0 10px;
+    font-size: 15px;
+    color: #00b894;
+}
+
+.sh-kp {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 0;
+    list-style: none;
+}
+
+.sh-kp li {
+    position: relative;
+    padding: 10px 14px 10px 34px;
+    border-radius: 10px;
+    background: var(--bg);
+    font-size: 14.5px;
+    line-height: 1.5;
+    color: var(--text);
+}
+
+.sh-kp li::before {
+    content: "";
+    position: absolute;
+    left: 14px;
+    top: 17px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #00b894;
+}
+
+.sh-modal-foot {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 16px 24px;
+    border-top: 1px solid var(--border);
+}
+
+.sh-btn {
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.sh-btn.primary {
+    border: none;
+    background: #00b894;
+    color: white;
+}
+
+.sh-btn.primary:hover {
+    background: #00a383;
+}
+
+.sh-btn.danger {
+    border: 1.5px solid rgba(231, 76, 60, 0.4);
+    background: transparent;
+    color: #e74c3c;
+}
+
+.sh-btn.danger:hover {
+    background: rgba(231, 76, 60, 0.1);
+}
+
+@media (max-width: 600px) {
+    .sh-card {
+        margin: 20px 12px;
+        padding: 20px 16px;
+    }
+
+    .sh-modal-head,
+    .sh-modal-body,
+    .sh-modal-foot {
+        padding-left: 18px;
+        padding-right: 18px;
+    }
+}
+
+.sh-card {
+    box-sizing: border-box;
+    grid-column: 1 / -1;   /* full-width row below both cards */
+    width: 100%;
+    max-width: none;
+    margin: 4px 0 40px;
+    padding: 26px;
+    border-radius: 20px;
+    background: var(--card);
+    box-shadow: 0 4px 18px var(--shadow);
+    transition: background 0.3s;
+}

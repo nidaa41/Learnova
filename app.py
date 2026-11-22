@@ -445,7 +445,7 @@ def build_recent_activity(uid, limit=6):
             "title": shorten(s.get("summary")),
             "subtitle": "Notes summarized",
             "time": s["created_at"],
-            "link": "/summarizer",
+            "link": f"/summarizer?id={s['_id']}",
         })
 
     # Newest first, keep only the top few
@@ -826,6 +826,58 @@ def my_avatar():
 def file_too_large(e):
     flash("That image is too big. Please choose one under 2 MB.", "avatar_error")
     return redirect(url_for("profile"))
+
+# ----- Summary history -----
+def iso(dt):
+    """Date to ISO text the browser can read (MongoDB dates are UTC)."""
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.isoformat()
+
+
+def get_user_summary(summary_id):
+    if not ObjectId.is_valid(summary_id):
+        return None
+    return summaries.find_one({"_id": ObjectId(summary_id), "user_id": session["user_id"]})
+
+
+@app.route("/api/summaries")
+@api_login_required
+def api_list_summaries():
+    docs = (summaries.find({"user_id": session["user_id"]}, {"summary": 1, "created_at": 1})
+                     .sort("created_at", -1)
+                     .limit(50))
+    return jsonify(summaries=[{
+        "id": str(d["_id"]),
+        "title": shorten(d.get("summary"), 70),
+        "created_at": iso(d.get("created_at")),
+    } for d in docs])
+
+
+@app.route("/api/summaries/<summary_id>")
+@api_login_required
+def api_get_summary(summary_id):
+    s = get_user_summary(summary_id)
+    if not s:
+        return jsonify(error="Summary not found."), 404
+    return jsonify(
+        id=str(s["_id"]),
+        summary=s.get("summary", ""),
+        key_points=[str(p) for p in s.get("key_points", [])],
+        created_at=iso(s.get("created_at")),
+    )
+
+
+@app.route("/api/summaries/<summary_id>", methods=["DELETE"])
+@api_login_required
+def api_delete_summary(summary_id):
+    s = get_user_summary(summary_id)
+    if not s:
+        return jsonify(error="Summary not found."), 404
+    summaries.delete_one({"_id": s["_id"]})
+    return jsonify(ok=True)
 
 if __name__ == "__main__":
     app.run(debug=True, use_reloader=False)
