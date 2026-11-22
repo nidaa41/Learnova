@@ -79,4 +79,62 @@ document.addEventListener("DOMContentLoaded", function () {
             localStorage.removeItem("learnovaUser");
         } catch (e) {}
     });
+
+        // ----- Notifications -----
+    const bellBtn = document.getElementById("bellBtn");
+    const notifPanel = document.getElementById("notifPanel");
+    const bellDot = document.getElementById("bellDot");
+    const notifCount = document.getElementById("notifCount");
+    const items = document.querySelectorAll(".notif-item");
+    const seenKey = "learnovaSeen-" + fullName;
+
+    let seen = [];
+    try {
+        seen = JSON.parse(localStorage.getItem(seenKey)) || [];
+    } catch (e) {}
+
+    // Mark the ones not seen before as unread
+    let unread = 0;
+    items.forEach(function (item) {
+        if (!seen.includes(item.dataset.id)) {
+            item.classList.add("unread");
+            unread++;
+        }
+    });
+
+    if (unread > 0) {
+        bellDot.classList.remove("hidden");
+        notifCount.textContent = unread + " new";
+    }
+
+    function openPanel() {
+        notifPanel.classList.add("open");
+        bellBtn.setAttribute("aria-expanded", "true");
+
+        // Mark everything as seen (the unread highlight stays until next visit)
+        bellDot.classList.add("hidden");
+        const ids = Array.from(items).map(function (item) { return item.dataset.id; });
+        try {
+            localStorage.setItem(seenKey, JSON.stringify(ids));
+        } catch (e) {}
+    }
+
+    function closePanel() {
+        notifPanel.classList.remove("open");
+        bellBtn.setAttribute("aria-expanded", "false");
+    }
+
+    bellBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        notifPanel.classList.contains("open") ? closePanel() : openPanel();
+    });
+
+    // Close when clicking outside or pressing Escape
+    document.addEventListener("click", function (e) {
+        if (!notifPanel.contains(e.target)) closePanel();
+    });
+    document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") closePanel();
+    });
 });
+

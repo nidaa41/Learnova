@@ -219,5 +219,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // ----- Start -----
     loadChats();
+
+    // Opened from Recent activity? (/chat?id=...) then open that chat
+    const chatIdFromUrl = new URLSearchParams(window.location.search).get("id");
+    if (chatIdFromUrl) {
+        openChat(chatIdFromUrl);
+    }
+
     input.focus();
 });

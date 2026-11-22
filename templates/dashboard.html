@@ -86,10 +86,36 @@
                     </span>
                 </button>
 
-                <button class="icon-btn bell" aria-label="Notifications">
-                    <svg class="ic"><use href="#i-bell"/></svg>
-                    <span class="bell-dot"></span>
-                </button>
+                <div class="notif-wrap">
+                    <button class="icon-btn bell" id="bellBtn" aria-label="Notifications" aria-expanded="false">
+                        <svg class="ic"><use href="#i-bell"/></svg>
+                        <span class="bell-dot hidden" id="bellDot"></span>
+                    </button>
+
+                    <div class="notif-panel" id="notifPanel">
+                        <div class="notif-head">
+                        <h4>Notifications</h4>
+                        <span class="notif-count" id="notifCount"></span>
+                    </div>
+
+                    <div class="notif-list">
+                        {% for n in notifications %}
+                        <a class="notif-item" data-id="{{ n.id }}" {% if n.link %}href="{{ n.link }}"{% endif %}>
+                            <div class="icon-box sm icon-{{ n.color }}">
+                                <svg class="ic"><use href="#i-{{ n.icon }}"/></svg>
+                            </div>
+                            <div class="notif-body">
+                                <strong>{{ n.title }}</strong>
+                                <p>{{ n.text }}</p>
+                            </div>
+                            <span class="unread-dot"></span>
+                        </a>
+                        {% else %}
+                            <p class="notif-empty">You're all caught up!</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
 
                 <div class="profile">
                     <a href="/profile" class="profile" title="View profile">
@@ -133,7 +159,7 @@
                 <div class="stat-card">
                     <div class="icon-box sm icon-notes"><svg class="ic"><use href="#i-notes"/></svg></div>
                     <div>
-                        <div class="stat-value" id="statNotes">0</div>
+                        <div class="stat-value" id="statNotes">{{ notes_count }}</div>
                         <div class="stat-label">Notes summarized</div>
                     </div>
                 </div>
@@ -186,15 +212,32 @@
             <section class="dash-grid">
                 <div class="panel">
                     <div class="panel-head">
-                        <h3>Recent activity</h3>
-                        <a href="#">View all</a>
-                    </div>
-                    <div class="empty-state">
-                        <svg class="ic"><use href="#i-clock"/></svg>
-                        <h4>No activity yet</h4>
-                        <p>Your chats, summaries and quizzes will show up here.</p>
-                    </div>
+                    <h3>Recent activity</h3>
                 </div>
+
+            {% if recent_activity %}
+                <div class="activity-list">
+                    {% for item in recent_activity %}
+                        <a href="{{ item.link }}" class="activity-item">
+                            <div class="icon-box sm icon-{{ item.color }}">
+                                <svg class="ic"><use href="#i-{{ item.icon }}"/></svg>
+                            </div>
+                            <div class="activity-body">
+                                <strong>{{ item.title }}</strong>
+                                <span>{{ item.subtitle }}</span>
+                            </div>
+                            <span class="activity-time">{{ item.ago }}</span>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <svg class="ic"><use href="#i-clock"/></svg>
+                    <h4>No activity yet</h4>
+                    <p>Your chats, summaries and quizzes will show up here.</p>
+                </div>
+            {% endif %}
+        </div>
 
                 <div class="panel">
                     <div class="panel-head">

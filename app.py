@@ -298,6 +298,7 @@ def dashboard():
     ]))
     quizzes_taken = quiz_stats[0]["count"] if quiz_stats else 0
     avg_score = round(quiz_stats[0]["avg"]) if quiz_stats else None
+    notes_count = summaries.count_documents({"user_id": uid})
 
     return render_template(
         "dashboard.html",
@@ -305,7 +306,153 @@ def dashboard():
         questions_count=questions_count,
         quizzes_taken=quizzes_taken,
         avg_score=avg_score,
+        notes_count=notes_count,
+        recent_activity=build_recent_activity(uid),
+        notifications=build_notifications(uid, questions_count),
     )
+
+# ----- Notifications -----
+STUDY_TIPS = [
+    "Study in 25-minute blocks with 5-minute breaks (the Pomodoro technique).",
+    "Explain a topic out loud as if teaching someone. It shows what you really understand.",
+    "Test yourself with a quick quiz instead of just re-reading your notes.",
+    "Review new material within 24 hours to remember it much longer.",
+    "Put your phone in another room while studying to stay focused.",
+    "Summarize each chapter in 3 sentences to lock in the key ideas.",
+]
+
+NEXT_LEVEL = {"easy": "Medium", "medium": "Hard"}
+
+
+def build_notifications(uid, questions_count):
+    """Create notifications from the user's own activity."""
+    notes = []
+
+    # New user: no questions asked yet
+    if questions_count == 0:
+        notes.append({
+            "id": "welcome",
+            "icon": "chat", "color": "chat",
+            "title": "Welcome to Learnova!",
+            "text": "Start by asking Nova your first study question.",
+            "link": "/chat",
+        })
+
+    # Latest quiz result, or a nudge to take one
+    last_quiz = quizzes.find_one({"user_id": uid, "completed": True}, sort=[("completed_at", -1)])
+    if last_quiz:
+        p = last_quiz["percent"]
+        topic = last_quiz["topic"]
+        topic = topic[:35] + "…" if len(topic) > 35 else topic
+        if p >= 80:
+            nxt = NEXT_LEVEL.get(last_quiz.get("difficulty"))
+            text = f"You scored {p}% on {topic}. " + (f"Ready to try {nxt} mode?" if nxt else "Excellent work!")
+        elif p >= 50:
+            text = f"You scored {p}% on {topic}. Review the explanations and try again!"
+        else:
+            text = f"You scored {p}% on {topic}. Ask Nova to explain the tricky parts."
+        notes.append({
+            "id": f"quiz-{last_quiz['_id']}-{p}",  # changes when the score changes
+            "icon": "trophy", "color": "score",
+            "title": "Quiz result",
+            "text": text,
+            "link": "/quiz",
+        })
+    else:
+        notes.append({
+            "id": "no-quiz",
+            "icon": "quiz", "color": "quiz",
+            "title": "Test yourself",
+            "text": "You haven't taken a quiz yet. Generate one on any topic!",
+            "link": "/quiz",
+        })
+
+    # Profile photo reminder
+    if not session.get("avatar"):
+        notes.append({
+            "id": "no-photo",
+            "icon": "user", "color": "chat",
+            "title": "Add a profile photo",
+            "text": "Personalise your account with a photo.",
+            "link": "/profile",
+        })
+
+    # Daily study tip (new one each day)
+    today = datetime.now().date()
+    notes.append({
+        "id": f"tip-{today.isoformat()}",
+        "icon": "idea", "color": "idea",
+        "title": "Study tip of the day",
+        "text": STUDY_TIPS[today.toordinal() % len(STUDY_TIPS)],
+        "link": None,
+    })
+
+    return notes
+
+# ----- Recent activity -----
+def time_ago(dt):
+    """Turn a date into '5 min ago', '2 hours ago', etc."""
+    if dt.tzinfo is None:  # MongoDB returns dates without a timezone (they're UTC)
+        dt = dt.replace(tzinfo=timezone.utc)
+    seconds = int((datetime.now(timezone.utc) - dt).total_seconds())
+
+    if seconds < 60:
+        return "Just now"
+    minutes = seconds // 60
+    if minutes < 60:
+        return f"{minutes} min ago"
+    hours = minutes // 60
+    if hours < 24:
+        return f"{hours} hour{'s' if hours > 1 else ''} ago"
+    days = hours // 24
+    if days < 7:
+        return "Yesterday" if days == 1 else f"{days} days ago"
+    return dt.strftime("%d %b %Y")
+
+
+def shorten(text, length=55):
+    text = (text or "").strip()
+    return text[:length] + "…" if len(text) > length else text
+
+
+def build_recent_activity(uid, limit=6):
+    """Merge the latest chats, quizzes and summaries into one timeline."""
+    items = []
+
+    for c in chats.find({"user_id": uid}, {"title": 1, "updated_at": 1}).sort("updated_at", -1).limit(limit):
+        items.append({
+            "icon": "chat", "color": "chat",
+            "title": shorten(c["title"]),
+            "subtitle": "Chat with Nova",
+            "time": c["updated_at"],
+            "link": f"/chat?id={c['_id']}",
+        })
+
+    for q in (quizzes.find({"user_id": uid, "completed": True},
+                           {"topic": 1, "percent": 1, "completed_at": 1})
+                     .sort("completed_at", -1).limit(limit)):
+        items.append({
+            "icon": "quiz", "color": "quiz",
+            "title": shorten(q["topic"]),
+            "subtitle": f"Quiz · scored {q['percent']}%",
+            "time": q["completed_at"],
+            "link": "/quiz",
+        })
+
+    for s in summaries.find({"user_id": uid}, {"summary": 1, "created_at": 1}).sort("created_at", -1).limit(limit):
+        items.append({
+            "icon": "notes", "color": "notes",
+            "title": shorten(s.get("summary")),
+            "subtitle": "Notes summarized",
+            "time": s["created_at"],
+            "link": "/summarizer",
+        })
+
+    # Newest first, keep only the top few
+    items.sort(key=lambda i: i["time"], reverse=True)
+    for item in items:
+        item["ago"] = time_ago(item["time"])
+    return items[:limit]
 
 @app.route("/logout")
 def logout():
