@@ -1,6 +1,10 @@
 import os
 from datetime import datetime, timezone
 from functools import wraps
+import json
+from google import genai
+from google.genai import types
+from pypdf import PdfReader
 
 import bcrypt
 from dotenv import load_dotenv
@@ -24,6 +28,10 @@ client = MongoClient(os.getenv("mongodb://localhost:27017/"))
 db = client["learnova"]
 users = db["users"]
 users.create_index("email", unique=True)  # no two accounts with the same email
+summaries = db["summaries"]
+gemini = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+GEMINI_MODEL = os.getenv("GEMINI_MODEL")
+app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024  # 10 MB upload limit
 chats = db["chats"]
 chats.create_index([("user_id", 1), ("updated_at", -1)])  # fast "my recent chats" lookups
 
@@ -304,5 +312,63 @@ def send_chat():
 
     return jsonify(chat_id=chat_id, title=title, reply=reply)
 
+@app.route("/summarizer")
+@login_required
+def summarizer():
+    return render_template("summarizer.html", name=session["name"])
+
+
+@app.route("/api/summarize", methods=["POST"])
+@login_required
+def api_summarize():
+    text = request.form.get("text", "").strip()
+    pdf = request.files.get("pdf")
+
+    # If a PDF was uploaded, read the text out of it
+    if pdf and pdf.filename:
+        if not pdf.filename.lower().endswith(".pdf"):
+            return jsonify(error="Please upload a PDF file."), 400
+        try:
+            reader = PdfReader(pdf)
+            text = "\n".join((page.extract_text() or "") for page in reader.pages).strip()
+        except Exception:
+            return jsonify(error="Could not read that PDF."), 400
+
+    if len(text) < 50:
+        return jsonify(error="Please give at least a few sentences of notes."), 400
+
+    text = text[:30000]  # keep the request a reasonable size
+
+    prompt = (
+        "You are a study assistant. Summarize the student's notes below.\n"
+        "Reply ONLY with JSON in this format:\n"
+        '{"summary": "a clear summary in 4-6 sentences", '
+        '"key_points": ["point 1", "point 2", "..."]}\n'
+        "Give 5 to 8 short key points.\n\n"
+        "NOTES:\n" + text
+    )
+
+    try:
+        response = gemini.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=prompt,
+            config=types.GenerateContentConfig(response_mime_type="application/json"),
+        )
+        data = json.loads(response.text)
+    except Exception as e:
+        print("Gemini error:", e)
+        return jsonify(error="The AI could not summarize this. Please try again."), 500
+
+    summary = data.get("summary", "")
+    key_points = data.get("key_points", [])
+
+    summaries.insert_one({
+        "user_id": session["user_id"],
+        "summary": summary,
+        "key_points": key_points,
+        "created_at": datetime.now(timezone.utc),
+    })
+
+    return jsonify(summary=summary, key_points=key_points)
 if __name__ == "__main__":
     app.run(debug=True)

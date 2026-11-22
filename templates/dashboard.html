@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="/static/css/dashboard.css">
     <script src="/static/js/theme.js"></script>
 </head>
-<body class="dash-body" data-user="{{ name }}"></body>
+<body class="dash-body" data-user="{{ name }}">
 
     <!-- ===== Icon library (hidden, reused below with <use>) ===== -->
     <svg style="display:none">
@@ -40,9 +40,9 @@
             <a href="/chat" class="side-link">
                 <svg class="ic"><use href="#i-chat"/></svg><span>Chat with Nova</span>
             </a>
-            <a href="summarizer.html" class="side-link">
-                <svg class="ic"><use href="#i-notes"/></svg><span>Notes Summarizer</span>
-            </a>
+            <a href="/summarizer" class="side-link">
+    <svg class="ic"><use href="#i-notes"/></svg><span>Notes Summarizer</span>
+</a>
             <a href="quiz.html" class="side-link">
                 <svg class="ic"><use href="#i-quiz"/></svg><span>Quiz Generator</span>
             </a>
@@ -55,7 +55,7 @@
             <a href="#" class="side-link">
                 <svg class="ic"><use href="#i-settings"/></svg><span>Settings</span>
             </a>
-            <a href="/logout" class="side-link logout" id="logoutBtn"></a>
+            <a href="/logout" class="side-link logout" id="logoutBtn">
                 <svg class="ic"><use href="#i-logout"/></svg><span>Logout</span>
             </a>
         </div>
@@ -157,7 +157,7 @@
                     <p>Ask any study question and get clear, step-by-step answers.</p>
                     <span class="tool-open">Open <svg class="ic"><use href="#i-arrow"/></svg></span>
                 </a>
-                <a href="summarizer.html" class="tool-card">
+                <a href="/summarizer" class="tool-card">
                     <div class="icon-box icon-notes"><svg class="ic"><use href="#i-notes"/></svg></div>
                     <h3>Notes Summarizer</h3>
                     <p>Turn long notes into short summaries and key points.</p>
