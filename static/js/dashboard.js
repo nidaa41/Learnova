@@ -45,18 +45,50 @@ document.addEventListener("DOMContentLoaded", function () {
     const dayIndex = new Date().getDate() % tips.length;
     document.getElementById("tipText").textContent = tips[dayIndex];
 
-    // ----- Daily goal ring -----
-    const minutesDone = 0;   // will come from the backend later
-    const goalMinutes = 30;
-    const percent = Math.min(100, Math.round((minutesDone / goalMinutes) * 100));
+        // ----- Daily goal ring -----
+    const goalRing = document.getElementById("goalRing");
     const circumference = 326.7;
+    let goalDone = parseInt(goalRing.dataset.done, 10) || 0;
+    let goalTarget = parseInt(goalRing.dataset.goal, 10) || 30;
 
-    document.getElementById("goalDone").textContent = minutesDone;
-    document.getElementById("goalPercent").textContent = percent + "%";
-    setTimeout(function () {
+    function drawRing() {
+        const percent = Math.min(100, Math.round((goalDone / goalTarget) * 100));
+        document.getElementById("goalDone").textContent = goalDone;
+        document.getElementById("goalTarget").textContent = goalTarget;
+        document.getElementById("goalPercent").textContent = percent + "%";
         document.getElementById("ringFg").style.strokeDashoffset =
             circumference - (percent / 100) * circumference;
-    }, 300);
+        goalRing.classList.toggle("done", percent >= 100);
+    }
+
+    setTimeout(drawRing, 300);
+
+        // Week bars: set each bar's height from its data-pct value
+    document.querySelectorAll(".wb-fill").forEach(function (bar) {
+        bar.style.height = (parseInt(bar.dataset.pct, 10) || 0) + "%";
+    });
+
+    // Change the daily goal
+    document.querySelectorAll(".goal-pill").forEach(function (pill) {
+        pill.addEventListener("click", async function () {
+            const minutes = parseInt(pill.dataset.minutes, 10);
+            try {
+                const res = await fetch("/api/study/goal", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ minutes: minutes })
+                });
+                if (!res.ok) throw new Error();
+                goalTarget = minutes;
+                document.querySelectorAll(".goal-pill").forEach(function (p) {
+                    p.classList.toggle("active", p === pill);
+                });
+                drawRing();
+            } catch (e) {
+                alert("Couldn't save your goal. Please try again.");
+            }
+        });
+    });
 
     // ----- Mobile sidebar -----
     const sidebar = document.getElementById("sidebar");

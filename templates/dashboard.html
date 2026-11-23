@@ -12,6 +12,7 @@
 
     <!-- ===== Icon library (hidden, reused below with <use>) ===== -->
     <svg style="display:none">
+        <symbol id="i-flame" viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></symbol>
         <symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
         <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
         <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
@@ -215,45 +216,74 @@
                     <h3>Recent activity</h3>
                 </div>
 
-            {% if recent_activity %}
-                <div class="activity-list">
-                    {% for item in recent_activity %}
-                        <a href="{{ item.link }}" class="activity-item">
-                            <div class="icon-box sm icon-{{ item.color }}">
-                                <svg class="ic"><use href="#i-{{ item.icon }}"/></svg>
-                            </div>
-                            <div class="activity-body">
-                                <strong>{{ item.title }}</strong>
-                                <span>{{ item.subtitle }}</span>
-                            </div>
-                            <span class="activity-time">{{ item.ago }}</span>
-                        </a>
-                    {% endfor %}
+                {% if recent_activity %}
+                    <div class="activity-list">
+                        {% for item in recent_activity %}
+                            <a href="{{ item.link }}" class="activity-item">
+                                <div class="icon-box sm icon-{{ item.color }}">
+                                    <svg class="ic"><use href="#i-{{ item.icon }}"/></svg>
+                                </div>
+                                <div class="activity-body">
+                                    <strong>{{ item.title }}</strong>
+                                    <span>{{ item.subtitle }}</span>
+                                </div>
+                                <span class="activity-time">{{ item.ago }}</span>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <svg class="ic"><use href="#i-clock"/></svg>
+                        <h4>No activity yet</h4>
+                        <p>Your chats, summaries and quizzes will show up here.</p>
+                    </div>
+                {% endif %}
                 </div>
-            {% else %}
-                <div class="empty-state">
-                    <svg class="ic"><use href="#i-clock"/></svg>
-                    <h4>No activity yet</h4>
-                    <p>Your chats, summaries and quizzes will show up here.</p>
-                </div>
-            {% endif %}
-        </div>
 
                 <div class="panel">
                     <div class="panel-head">
                         <h3>Daily study goal</h3>
+                        {% if study.streak %}
+                            <span class="streak-badge">
+                                <svg class="ic"><use href="#i-flame"/></svg>
+                                {{ study.streak }}-day streak
+                            </span>
+                        {% endif %}
                     </div>
+
                     <div class="goal">
-                        <div class="ring">
+                        <div class="ring" id="goalRing" data-done="{{ study.today }}" data-goal="{{ study.goal }}">
                             <svg viewBox="0 0 120 120">
                                 <circle class="ring-bg" cx="60" cy="60" r="52"/>
                                 <circle class="ring-fg" id="ringFg" cx="60" cy="60" r="52"/>
                             </svg>
                             <div class="ring-text">
                                 <strong id="goalPercent">0%</strong>
-                                <span><span id="goalDone">0</span> / 30 min</span>
+                                <span><span id="goalDone">{{ study.today }}</span> / <span id="goalTarget">{{ study.goal }}</span> min</span>
                             </div>
                         </div>
+
+                        <div class="goal-picker">
+                            <span>Daily goal</span>
+                            <div class="goal-pills">
+                                {% for c in study.choices %}
+                                    <button type="button" class="goal-pill {% if c == study.goal %}active{% endif %}" data-minutes="{{ c }}">{{ c }}m</button>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="week">
+                            <span class="week-title">This week</span>
+                            <div class="week-bars">
+                                {% for d in study.week %}
+                                    <div class="wb {% if d.today %}today{% endif %}" title="{{ d.minutes }} min">
+                                        <div class="wb-track"><div class="wb-fill" data-pct="{{ d.pct }}"></div></div>
+                                        <span>{{ d.label }}</span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
                         <div class="tip">
                             <span class="tip-label">Tip of the day</span>
                             <p id="tipText"></p>

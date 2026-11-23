@@ -953,3 +953,136 @@ a.notif-item[href]:hover {
 .activity-item:hover .activity-time {
     color: var(--primary);
 }
+
+/* ===== Study goal ===== */
+.ring.done .ring-fg {
+    stroke: #00b894;
+}
+
+.ring.done .ring-text strong {
+    color: #00b894;
+}
+
+.streak-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 11px;
+    border-radius: 20px;
+    background: rgba(225, 112, 85, 0.14);
+    color: #e17055;
+    font-size: 12.5px;
+    font-weight: 700;
+}
+
+.streak-badge .ic {
+    width: 15px;
+    height: 15px;
+}
+
+/* Goal picker */
+.goal-picker {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.goal-picker > span {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+}
+
+.goal-pills {
+    display: flex;
+    gap: 6px;
+}
+
+.goal-pill {
+    padding: 6px 11px;
+    border: 1.5px solid var(--border);
+    border-radius: 20px;
+    background: transparent;
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.goal-pill:hover {
+    border-color: var(--primary);
+}
+
+.goal-pill.active {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: white;
+}
+
+/* This week bars */
+.week {
+    width: 100%;
+}
+
+.week-title {
+    display: block;
+    margin-bottom: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+}
+
+.week-bars {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.wb {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.wb-track {
+    position: relative;
+    width: 100%;
+    max-width: 26px;
+    height: 70px;
+    border-radius: 8px;
+    background: var(--bg);
+    overflow: hidden;
+}
+
+.wb-fill {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 8px;
+    background: linear-gradient(180deg, #a29bfe, #6c5ce7);
+    animation: growUp 0.8s ease backwards;
+}
+
+@keyframes growUp {
+    from { height: 0 !important; }
+}
+
+.wb span {
+    font-size: 11.5px;
+    color: var(--muted);
+}
+
+.wb.today span {
+    color: var(--primary);
+    font-weight: 700;
+}
+
+.wb.today .wb-track {
+    box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.35);
+}

@@ -1,90 +1,103 @@
 import os
-from datetime import datetime, timezone
-from functools import wraps
 import json
-from google import genai
-from google.genai import types
-from pypdf import PdfReader
+import time
+from datetime import datetime, timezone, timedelta
+from functools import wraps
 
 import bcrypt
+from bson import ObjectId
 from dotenv import load_dotenv
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash, send_from_directory
+from flask import (Flask, render_template, request, redirect, url_for, session,
+                   jsonify, flash, send_from_directory)
 from google import genai
 from google.genai import types
-from pymongo import MongoClient
-from bson import ObjectId
-
-from pymongo.errors import DuplicateKeyError
-
-import json
 from pydantic import BaseModel
-
-import time
+from pymongo import MongoClient, ReturnDocument
+from pymongo.errors import DuplicateKeyError
+from pypdf import PdfReader
 
 # ----- Setup -----
 # Load .env from the same folder as app.py, wherever you run it from
 load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
-...
+
+if not os.getenv("SECRET_KEY"):
+    raise RuntimeError("SECRET_KEY missing: check that .env exists next to app.py")
+
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY")
-
-app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024  # 2 MB upload limit
+app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024  # 10 MB max upload (PDFs); photos are checked separately
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 AVATAR_FOLDER = os.path.join(BASE_DIR, "uploads", "avatars")
 os.makedirs(AVATAR_FOLDER, exist_ok=True)
+AVATAR_MAX_BYTES = 2 * 1024 * 1024  # 2 MB for profile photos
 
 
 @app.context_processor
 def inject_avatar():
     """Make the avatar version available in every template."""
     return {"avatar": session.get("avatar")}
-print("Secret key loaded:", bool(app.secret_key))
 
-client = MongoClient(os.getenv("mongodb://localhost:27017/"))
+
+# ----- Database -----
+client = MongoClient(os.getenv("MONGO_URI", "mongodb://localhost:27017/"))
 db = client["learnova"]
+
 users = db["users"]
 users.create_index("email", unique=True)  # no two accounts with the same email
-summaries = db["summaries"]
-gemini = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-GEMINI_MODEL = os.getenv("GEMINI_MODEL")
 
-GEMINI_FALLBACK_MODEL = os.getenv("GEMINI_FALLBACK_MODEL")
+chats = db["chats"]
+chats.create_index([("user_id", 1), ("updated_at", -1)])  # fast "my recent chats" lookups
+
+quizzes = db["quizzes"]
+quizzes.create_index([("user_id", 1), ("completed_at", -1)])
+
+summaries = db["summaries"]
+
+study_logs = db["study_logs"]
+study_logs.create_index([("user_id", 1), ("date", 1)], unique=True)  # one record per user per day
+
+
+# ===== Gemini setup (one client for the whole app) =====
+gemini = genai.Client(
+    api_key=os.getenv("GEMINI_API_KEY"),
+    http_options=types.HttpOptions(api_version="v1beta"),  # needed for system instructions
+)
+
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+
+# Backup models, tried in order when the main one is busy
+_fallbacks = os.getenv("GEMINI_FALLBACK_MODELS") or ""
+GEMINI_FALLBACK_MODELS = [m.strip() for m in _fallbacks.split(",") if m.strip()]
+
+print("Main model:", GEMINI_MODEL)
+print("Fallbacks:", GEMINI_FALLBACK_MODELS)
 
 
 def gemini_generate(contents, config):
     """
-    Call Gemini, retrying when Google is busy (503) or rate-limited (429).
-    Tries the main model first, then the fallback model if one is set.
+    Call Gemini. If a model is busy (503) or rate-limited (429),
+    move straight on to the next model. Two quick rounds through all models.
     """
-    models = [GEMINI_MODEL] + ([GEMINI_FALLBACK_MODEL] if GEMINI_FALLBACK_MODEL else [])
+    models = [GEMINI_MODEL] + [m for m in GEMINI_FALLBACK_MODELS if m != GEMINI_MODEL]
     last_error = None
 
-    for model in models:
-        for attempt in range(3):
+    for round_no in range(2):
+        for model in models:
             try:
                 return gemini.models.generate_content(model=model, contents=contents, config=config)
             except Exception as e:
-                last_error = e
                 code = getattr(e, "code", None)
                 if code in (429, 500, 503):
-                    app.logger.warning("Gemini busy (%s) on %s, attempt %d", code, model, attempt + 1)
-                    time.sleep(1.5 * (attempt + 1))  # wait 1.5s, 3s, 4.5s
+                    last_error = e
+                    app.logger.warning("Gemini busy (%s) on %s, round %d", code, model, round_no + 1)
+                    time.sleep(0.5)
                     continue
-                raise  # other errors (bad key, bad request): stop right away
-        # this model failed 3 times; try the next one
+                raise
+        time.sleep(2)
 
     raise last_error
 
-app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024  # 10 MB upload limit
-chats = db["chats"]
-chats.create_index([("user_id", 1), ("updated_at", -1)])  # fast "my recent chats" lookups
-quizzes = db["quizzes"]
-quizzes.create_index([("user_id", 1), ("completed_at", -1)])
-
-# ----- Gemini setup -----
-gemini = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
 
 NOVA_INSTRUCTIONS = """
 You are Nova, the friendly AI study assistant inside Learnova, a study app for college students.
@@ -96,7 +109,7 @@ You are Nova, the friendly AI study assistant inside Learnova, a study app for c
 """
 
 
-def ask_gemini(messages, instructions=NOVA_INSTRUCTIONS):
+def ask_gemini(messages, instructions=None):
     """Send a conversation to Gemini and return the reply text."""
     contents = [
         types.Content(
@@ -107,10 +120,9 @@ def ask_gemini(messages, instructions=NOVA_INSTRUCTIONS):
     ]
     response = gemini_generate(
         contents,
-        types.GenerateContentConfig(system_instruction=instructions),
+        types.GenerateContentConfig(system_instruction=instructions or NOVA_INSTRUCTIONS),
     )
     return response.text
-
 # ----- Quiz generation -----
 class QuizQuestion(BaseModel):
     question: str
@@ -309,6 +321,7 @@ def dashboard():
         notes_count=notes_count,
         recent_activity=build_recent_activity(uid),
         notifications=build_notifications(uid, questions_count),
+        study=build_study_stats(uid),
     )
 
 # ----- Notifications -----
@@ -454,6 +467,45 @@ def build_recent_activity(uid, limit=6):
         item["ago"] = time_ago(item["time"])
     return items[:limit]
 
+# ----- Study goal -----
+GOAL_CHOICES = (15, 30, 45, 60)
+
+
+def build_study_stats(uid):
+    """Today's minutes, goal, streak and the last 7 days."""
+    user = users.find_one({"_id": ObjectId(uid)}, {"goal_minutes": 1})
+    goal = (user or {}).get("goal_minutes", 30)
+
+    today = datetime.now().date()
+    start = today - timedelta(days=59)
+    logs = {
+        log["date"]: log["minutes"]
+        for log in study_logs.find({"user_id": uid, "date": {"$gte": start.isoformat()}})
+    }
+    today_minutes = logs.get(today.isoformat(), 0)
+
+    # Streak: count back through consecutive days where the goal was met.
+    # If today's goal isn't met yet, start counting from yesterday.
+    streak = 0
+    day = today if today_minutes >= goal else today - timedelta(days=1)
+    while logs.get(day.isoformat(), 0) >= goal:
+        streak += 1
+        day -= timedelta(days=1)
+
+    # Last 7 days for the mini bar chart
+    week = []
+    for i in range(6, -1, -1):
+        d = today - timedelta(days=i)
+        minutes = logs.get(d.isoformat(), 0)
+        week.append({
+            "label": d.strftime("%a")[:2],
+            "minutes": minutes,
+            "pct": min(100, round(minutes * 100 / goal)),
+            "today": i == 0,
+        })
+
+    return {"goal": goal, "today": today_minutes, "streak": streak, "week": week, "choices": GOAL_CHOICES}
+
 @app.route("/logout")
 def logout():
     session.clear()
@@ -587,7 +639,7 @@ def summarizer():
 
 
 @app.route("/api/summarize", methods=["POST"])
-@login_required
+@api_login_required
 def api_summarize():
     text = request.form.get("text", "").strip()
     pdf = request.files.get("pdf")
@@ -616,29 +668,30 @@ def api_summarize():
         "NOTES:\n" + text
     )
 
+    # Tell Gemini to answer in pure JSON (no extra text around it)
+    config = types.GenerateContentConfig(response_mime_type="application/json")
+
     try:
-        response = gemini.models.generate_content(
-            model=GEMINI_MODEL,
-            contents=prompt,
-            config=types.GenerateContentConfig(response_mime_type="application/json"),
-        )
+        response = gemini_generate(prompt, config)
         data = json.loads(response.text)
     except Exception as e:
-        print("Gemini error:", e)
-        return jsonify(error="The AI could not summarize this. Please try again."), 500
+        app.logger.error("Summarizer error: %s", e)
+        return jsonify(error="Nova is taking a short break. Please try again in a minute."), 503
 
-    summary = data.get("summary", "")
-    key_points = data.get("key_points", [])
+    summary = str(data.get("summary", "")).strip()
+    key_points = [str(p) for p in data.get("key_points", []) if str(p).strip()]
 
-    summaries.insert_one({
+    if not summary:
+        return jsonify(error="The AI could not summarize this. Please try again."), 502
+
+    result = summaries.insert_one({
         "user_id": session["user_id"],
         "summary": summary,
         "key_points": key_points,
         "created_at": datetime.now(timezone.utc),
     })
 
-    return jsonify(summary=summary, key_points=key_points)
-
+    return jsonify(id=str(result.inserted_id), summary=summary, key_points=key_points)
 # ----- Quiz Generator -----
 @app.route("/quiz")
 @login_required
@@ -781,9 +834,14 @@ def upload_avatar():
     if not file or file.filename == "":
         flash("Please choose an image first.", "avatar_error")
         return redirect(url_for("profile"))
-
     header = file.read(16)
     file.seek(0)
+    file.seek(0, os.SEEK_END)
+    size = file.tell()
+    file.seek(0)
+    if size > AVATAR_MAX_BYTES:
+        flash("That image is too big. Please choose one under 2 MB.", "avatar_error")
+        return redirect(url_for("profile"))
     ext = detect_image_type(header)
     if not ext:
         flash("Please upload a PNG, JPG or WEBP image.", "avatar_error")
@@ -824,8 +882,10 @@ def my_avatar():
 
 @app.errorhandler(413)
 def file_too_large(e):
-    flash("That image is too big. Please choose one under 2 MB.", "avatar_error")
-    return redirect(url_for("profile"))
+    if request.path.startswith("/profile"):
+        flash("That image is too big. Please choose one under 2 MB.", "avatar_error")
+        return redirect(url_for("profile"))
+    return jsonify(error="That file is too big. The maximum is 10 MB."), 413
 
 # ----- Summary history -----
 def iso(dt):
@@ -878,6 +938,42 @@ def api_delete_summary(summary_id):
         return jsonify(error="Summary not found."), 404
     summaries.delete_one({"_id": s["_id"]})
     return jsonify(ok=True)
+
+@app.route("/api/study/ping", methods=["POST"])
+@api_login_required
+def study_ping():
+    """Called once a minute while the user is actively studying."""
+    uid = session["user_id"]
+    today = datetime.now().date().isoformat()
+    now = datetime.now(timezone.utc)
+
+    # Ignore pings that come too fast (e.g. two tabs open at once)
+    log = study_logs.find_one({"user_id": uid, "date": today})
+    if log and log.get("last_ping"):
+        last = log["last_ping"]
+        if last.tzinfo is None:
+            last = last.replace(tzinfo=timezone.utc)
+        if (now - last).total_seconds() < 50:
+            return jsonify(minutes=log["minutes"], counted=False)
+
+    log = study_logs.find_one_and_update(
+        {"user_id": uid, "date": today},
+        {"$inc": {"minutes": 1}, "$set": {"last_ping": now}},
+        upsert=True,  # create today's record if it doesn't exist yet
+        return_document=ReturnDocument.AFTER,
+    )
+    return jsonify(minutes=log["minutes"], counted=True)
+
+
+@app.route("/api/study/goal", methods=["POST"])
+@api_login_required
+def set_study_goal():
+    data = request.get_json(silent=True) or {}
+    minutes = data.get("minutes")
+    if minutes not in GOAL_CHOICES:
+        return jsonify(error="Please choose 15, 30, 45 or 60 minutes."), 400
+    users.update_one({"_id": ObjectId(session["user_id"])}, {"$set": {"goal_minutes": minutes}})
+    return jsonify(goal=minutes)
 
 if __name__ == "__main__":
     app.run(debug=True, use_reloader=False)
