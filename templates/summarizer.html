@@ -6,197 +6,134 @@
     <title>Notes Summarizer – Learnova</title>
     <link rel="stylesheet" href="/static/css/style.css">
     <link rel="stylesheet" href="/static/css/dashboard.css">
+    <link rel="stylesheet" href="/static/css/quiz.css">
     <link rel="stylesheet" href="/static/css/summarizer.css">
     <link rel="stylesheet" href="/static/css/summary-history.css">
     <script src="/static/js/theme.js"></script>
 </head>
-<body class="dash-body" data-user="{{ name }}">
+<body class="quiz-body">
 
     <!-- ===== Icon library ===== -->
     <svg style="display:none">
-        <symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
-        <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
-        <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+        <symbol id="i-back" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></symbol>
         <symbol id="i-notes" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></symbol>
-        <symbol id="i-quiz" viewBox="0 0 24 24"><path d="M20 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/><path d="M8 11l3 3 9-9"/></symbol>
-        <symbol id="i-idea" viewBox="0 0 24 24"><path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2V17h6v-.3c0-.8.4-1.5 1-2A7 7 0 0 0 12 2z"/></symbol>
-        <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></symbol>
-        <symbol id="i-menu" viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></symbol>
         <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/></symbol>
         <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></symbol>
     </svg>
 
-    <!-- ===== Sidebar ===== -->
-    <aside class="sidebar" id="sidebar">
-        <a href="/" class="logo sidebar-logo">Learn<span>ova</span></a>
-
-        <nav class="side-nav">
-            <p class="side-label">Menu</p>
-            <a href="/dashboard" class="side-link">
-                <svg class="ic"><use href="#i-grid"/></svg><span>Dashboard</span>
-            </a>
-            <a href="/chat" class="side-link">
-                <svg class="ic"><use href="#i-chat"/></svg><span>Chat with Nova</span>
-            </a>
-            <a href="/summarizer" class="side-link active">
-                <svg class="ic"><use href="#i-notes"/></svg><span>Notes Summarizer</span>
-            </a>
-            <a href="/quiz" class="side-link">
-                <svg class="ic"><use href="#i-quiz"/></svg><span>Quiz Generator</span>
-            </a>
-            <a href="/explainer" class="side-link">
-                <svg class="ic"><use href="#i-idea"/></svg><span>Concept Explainer</span>
-            </a>
-        </nav>
-
-        <div class="side-bottom">
-            <a href="/profile" class="side-link">
-                <svg class="ic"><use href="#i-user"/></svg><span>Profile</span>
-            </a>
-            <a href="/logout" class="side-link logout" id="logoutBtn">
-                <svg class="ic"><use href="#i-logout"/></svg><span>Logout</span>
-            </a>
+    <!-- ===== Header (same as Quiz and Chat) ===== -->
+    <header class="page-header">
+        <a href="/dashboard" class="back-link">
+            <svg class="ic"><use href="#i-back"/></svg> Dashboard
+        </a>
+        <div class="page-title">
+            <div class="icon-box sm icon-notes"><svg class="ic"><use href="#i-notes"/></svg></div>
+            <div>
+                <h1>Notes Summarizer</h1>
+                <span>Turn long notes into a short summary and key points</span>
+            </div>
         </div>
-    </aside>
+        <button id="themeToggle" class="theme-switch" aria-label="Toggle dark mode">
+            <span class="theme-switch-thumb">
+                <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4.5" fill="currentColor"/><path d="M12 1.5v2.5M12 20v2.5M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M1.5 12H4M20 12h2.5M4.6 19.4l1.8-1.8M17.6 6.4l1.8-1.8"/></svg>
+                <svg class="icon-moon" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+            </span>
+        </button>
+    </header>
 
-    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <main class="sum-container">
+        <div class="sum-grid">
 
-    <!-- ===== Main area ===== -->
-    <div class="dash-main">
+            <!-- Input -->
+            <section class="panel">
+                <div class="panel-head"><h3>Your notes</h3></div>
 
-        <header class="topbar">
-            <button class="icon-btn menu-btn" id="menuBtn" aria-label="Open menu">
-                <svg class="ic"><use href="#i-menu"/></svg>
-            </button>
+                <div class="sum-tabs">
+                    <button type="button" class="sum-tab active" data-mode="text">Paste text</button>
+                    <button type="button" class="sum-tab" data-mode="pdf">Upload PDF</button>
+                </div>
 
-            <div class="topbar-right">
-                <button id="themeToggle" class="theme-switch" aria-label="Toggle dark mode">
-                    <span class="theme-switch-thumb">
-                        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4.5" fill="currentColor"/><path d="M12 1.5v2.5M12 20v2.5M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M1.5 12H4M20 12h2.5M4.6 19.4l1.8-1.8M17.6 6.4l1.8-1.8"/></svg>
-                        <svg class="icon-moon" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
-                    </span>
+                <div class="sum-pane show" id="paneText">
+                    <textarea id="notes" class="sum-textarea" maxlength="30000"
+                              placeholder="Paste your notes here..."></textarea>
+                    <div class="sum-count" id="sumCount"></div>
+                </div>
+
+                <div class="sum-pane" id="panePdf">
+                    <div class="sum-drop" id="sumDrop">
+                        <svg class="ic"><use href="#i-upload"/></svg>
+                        <strong>Drag and drop your PDF here</strong>
+                        <span>or click to browse (max 10 MB)</span>
+                        <input type="file" id="pdf" accept=".pdf,application/pdf">
+                    </div>
+                    <div class="sum-file" id="sumFile">
+                        <svg class="ic"><use href="#i-notes"/></svg>
+                        <div class="sum-file-info">
+                            <span class="sum-file-name" id="sumFileName"></span>
+                            <span class="sum-file-size" id="sumFileSize"></span>
+                        </div>
+                        <button type="button" class="sum-file-remove" id="sumFileRemove" aria-label="Remove file">
+                            <svg class="ic"><use href="#i-x"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="button" id="go" class="btn btn-primary btn-full sum-submit">
+                    <span class="sum-spinner"></span>
+                    <span id="goLabel">Summarize</span>
                 </button>
 
-                <a href="/profile" class="profile" title="View profile">
-                    <div class="avatar" id="avatar">
-                        {% if avatar %}
-                            <img src="/my-avatar?v={{ avatar }}" alt="Your photo">
-                        {% else %}
-                            {{ (name.split() | map('first') | join)[:2] | upper }}
-                        {% endif %}
-                    </div>
-                    <div class="profile-text">
-                        <span class="profile-name" id="profileName">{{ name }}</span>
-                        <span class="profile-role">Learner</span>
-                    </div>
-                </a>
-            </div>
-        </header>
+                <div class="sum-error" id="sumError" role="alert"></div>
+            </section>
 
-        <main class="dash-content">
-
-            <!-- Page header -->
-            <div class="sum-header">
-                <div class="icon-box icon-notes"><svg class="ic"><use href="#i-notes"/></svg></div>
-                <div>
-                    <h1>Notes Summarizer</h1>
-                    <p>Turn long notes into a short summary and key points.</p>
+            <!-- Result -->
+            <section class="panel" id="resultPanel">
+                <div class="panel-head">
+                    <h3>Summary</h3>
+                    <button type="button" class="sum-copy" id="copyBtn" style="display:none">Copy</button>
                 </div>
-            </div>
 
-            <div class="sum-grid">
-
-                <!-- Input -->
-                <section class="panel">
-                    <div class="panel-head"><h3>Your notes</h3></div>
-
-                    <div class="sum-tabs">
-                        <button type="button" class="sum-tab active" data-mode="text">Paste text</button>
-                        <button type="button" class="sum-tab" data-mode="pdf">Upload PDF</button>
+                <div class="sum-state show" id="stateEmpty">
+                    <div class="empty-state">
+                        <svg class="ic"><use href="#i-notes"/></svg>
+                        <h4>Nothing summarized yet</h4>
+                        <p>Add your notes and click Summarize to see the result here.</p>
                     </div>
+                </div>
 
-                    <div class="sum-pane show" id="paneText">
-                        <textarea id="notes" class="sum-textarea" maxlength="30000"
-                                  placeholder="Paste your notes here..."></textarea>
-                        <div class="sum-count" id="sumCount"></div>
-                    </div>
+                <div class="sum-state" id="stateLoading">
+                    <div class="sk w90"></div>
+                    <div class="sk"></div>
+                    <div class="sk w75"></div>
+                    <div class="sk w60"></div>
+                    <div class="sk gap"></div>
+                    <div class="sk gap" style="margin-top:10px"></div>
+                    <div class="sk gap" style="margin-top:10px"></div>
+                </div>
 
-                    <div class="sum-pane" id="panePdf">
-                        <div class="sum-drop" id="sumDrop">
-                            <svg class="ic"><use href="#i-upload"/></svg>
-                            <strong>Drag and drop your PDF here</strong>
-                            <span>or click to browse (max 10 MB)</span>
-                            <input type="file" id="pdf" accept=".pdf,application/pdf">
-                        </div>
-                        <div class="sum-file" id="sumFile">
-                            <svg class="ic"><use href="#i-notes"/></svg>
-                            <div class="sum-file-info">
-                                <span class="sum-file-name" id="sumFileName"></span>
-                                <span class="sum-file-size" id="sumFileSize"></span>
-                            </div>
-                            <button type="button" class="sum-file-remove" id="sumFileRemove" aria-label="Remove file">
-                                <svg class="ic"><use href="#i-x"/></svg>
-                            </button>
-                        </div>
-                    </div>
+                <div class="sum-state" id="stateResult">
+                    <p class="sum-block-title">Summary</p>
+                    <p class="sum-text" id="sumSummary"></p>
+                    <p class="sum-block-title">Key points</p>
+                    <ul class="sum-points" id="sumPoints"></ul>
+                </div>
+            </section>
 
-                    <button type="button" id="go" class="btn btn-primary btn-full sum-submit">
-                        <span class="sum-spinner"></span>
-                        <span id="goLabel">Summarize</span>
-                    </button>
+            <!-- History: full-width row below both cards -->
+            <section class="sh-card">
+                <div class="sh-head">
+                    <h3>History</h3>
+                    <span class="sh-count" id="shCount"></span>
+                </div>
+                <div class="sh-list" id="shList">
+                    <p class="sh-empty">Loading...</p>
+                </div>
+            </section>
 
-                    <div class="sum-error" id="sumError" role="alert"></div>
-                </section>
+        </div>
+    </main>
 
-                <!-- Result -->
-                <section class="panel" id="resultPanel">
-                    <div class="panel-head">
-                        <h3>Summary</h3>
-                        <button type="button" class="sum-copy" id="copyBtn" style="display:none">Copy</button>
-                    </div>
-
-                    <div class="sum-state show" id="stateEmpty">
-                        <div class="empty-state">
-                            <svg class="ic"><use href="#i-notes"/></svg>
-                            <h4>Nothing summarized yet</h4>
-                            <p>Add your notes and click Summarize to see the result here.</p>
-                        </div>
-                    </div>
-
-                    <div class="sum-state" id="stateLoading">
-                        <div class="sk w90"></div>
-                        <div class="sk"></div>
-                        <div class="sk w75"></div>
-                        <div class="sk w60"></div>
-                        <div class="sk gap"></div>
-                        <div class="sk gap" style="margin-top:10px"></div>
-                        <div class="sk gap" style="margin-top:10px"></div>
-                    </div>
-
-                    <div class="sum-state" id="stateResult">
-                        <p class="sum-block-title">Summary</p>
-                        <p class="sum-text" id="sumSummary"></p>
-                        <p class="sum-block-title">Key points</p>
-                        <ul class="sum-points" id="sumPoints"></ul>
-                    </div>
-                </section>
-
-                <!-- History: inside the grid, full-width row below both cards -->
-                <section class="sh-card">
-                    <div class="sh-head">
-                        <h3>History</h3>
-                        <span class="sh-count" id="shCount"></span>
-                    </div>
-                    <div class="sh-list" id="shList">
-                        <p class="sh-empty">Loading...</p>
-                    </div>
-                </section>
-
-            </div>
-        </main>
-    </div>
-
-    <!-- ===== Summary viewer (popup, can stay outside the main area) ===== -->
+    <!-- ===== Summary viewer popup ===== -->
     <div class="sh-overlay" id="shOverlay">
         <div class="sh-modal" role="dialog" aria-modal="true" aria-labelledby="shModalTitle">
             <div class="sh-modal-head">
