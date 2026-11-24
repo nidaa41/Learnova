@@ -10,21 +10,10 @@ document.addEventListener("DOMContentLoaded", function () {
         .slice(0, 2)
         .map(function (part) { return part[0].toUpperCase(); })
         .join("");
-    $("profileName").textContent = fullName;
-    $("avatar").textContent = initials || "S";
 
     // ----- Mobile sidebar -----
     const sidebar = $("sidebar");
     const overlay = $("sidebarOverlay");
-
-    $("menuBtn").addEventListener("click", function () {
-        sidebar.classList.add("open");
-        overlay.classList.add("show");
-    });
-    overlay.addEventListener("click", function () {
-        sidebar.classList.remove("open");
-        overlay.classList.remove("show");
-    });
 
     // ----- Error helpers -----
     const errorBox = $("sumError");

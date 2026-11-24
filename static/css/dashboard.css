@@ -1240,7 +1240,8 @@ body {
     .activity-body strong {
         white-space: normal;               /* allow wrapping... */
         display: -webkit-box;
-        -webkit-line-clamp: 2;             /* ...but max 2 lines */
+        -webkit-line-clamp: 2;    
+        line-clamp: 2;         /* ...but max 2 lines */
         -webkit-box-orient: vertical;
         overflow: hidden;
         font-size: 14px;
