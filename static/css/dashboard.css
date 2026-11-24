@@ -1086,3 +1086,220 @@ a.notif-item[href]:hover {
 .wb.today .wb-track {
     box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.35);
 }
+
+/* ===== Full-width header with the sidebar below it ===== */
+.topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 250;
+    height: 72px;
+}
+
+.topbar-logo {
+    font-size: 24px;
+    text-decoration: none;
+    white-space: nowrap;
+    min-width: 186px; /* lines the logo up above the sidebar menu */
+}
+
+.topbar-logo:hover {
+    opacity: 0.85;
+}
+
+/* Sidebar starts under the header */
+.sidebar {
+    top: 72px;
+    bottom: 0;
+    height: auto;
+    padding-top: 24px;
+}
+
+/* Page content starts under the header too */
+.dash-main {
+    padding-top: 72px;
+}
+
+/* ===== Tablets and phones ===== */
+@media (max-width: 950px) {
+    /* Dark overlay also starts below the header, so the header stays usable */
+    .sidebar-overlay.show {
+        top: 72px;
+    }
+
+    .topbar-logo {
+        min-width: 0;
+    }
+}
+
+@media (max-width: 600px) {
+    .topbar-logo {
+        font-size: 21px;
+    }
+}
+
+/* ===== Make sure logo + profile always show in the header ===== */
+.topbar .topbar-logo {
+    display: inline-block !important;
+    color: var(--text);
+    flex-shrink: 0;
+}
+
+.topbar .topbar-right {
+    display: flex !important;
+    align-items: center;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.topbar .profile {
+    display: flex !important;
+    align-items: center;
+}
+
+.topbar .avatar {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Phones: keep the photo, hide only the name text and the bell */
+@media (max-width: 600px) {
+    .topbar {
+        gap: 10px;
+    }
+
+    .topbar .profile-text,
+    .topbar .notif-wrap {
+        display: none !important;
+    }
+
+    .topbar .topbar-right {
+        gap: 10px;
+    }
+
+    .topbar a.profile {
+        padding: 0;
+    }
+}
+
+/* ===== Phones/tablets: stop sideways scrolling ===== */
+html,
+body {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+@media (max-width: 950px) {
+    .dash-main {
+        margin-left: 0 !important;
+        width: 100%;
+    }
+
+    .topbar .menu-btn {
+        display: flex !important;
+    }
+
+    .dash-content {
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+}
+
+/* ===== Phones: Recent activity + Study goal ===== */
+@media (max-width: 600px) {
+
+    /* Panels get a little less padding on small screens */
+    .panel {
+        padding: 20px 16px;
+    }
+
+    .panel-head {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    /* ----- Recent activity ----- */
+    .activity-item {
+        display: grid;
+        grid-template-columns: 40px 1fr;   /* icon | text */
+        column-gap: 12px;
+        row-gap: 2px;
+        align-items: start;
+        margin: 0 -6px;
+        padding: 10px 6px;
+    }
+
+    .activity-item .icon-box.sm {
+        width: 40px;
+        height: 40px;
+        grid-row: span 2;                  /* icon sits beside both lines */
+    }
+
+    .activity-body strong {
+        white-space: normal;               /* allow wrapping... */
+        display: -webkit-box;
+        -webkit-line-clamp: 2;             /* ...but max 2 lines */
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        font-size: 14px;
+        line-height: 1.35;
+    }
+
+    .activity-body span {
+        font-size: 12.5px;
+    }
+
+    .activity-time {
+        grid-column: 2;                    /* time goes under the text */
+        font-size: 11.5px;
+    }
+
+    /* ----- Study goal ----- */
+    .goal {
+        gap: 18px;
+    }
+
+    .ring {
+        width: 130px;
+        height: 130px;
+    }
+
+    .ring-text strong {
+        font-size: 24px;
+    }
+
+    .goal-picker {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .goal-pills {
+        width: 100%;
+    }
+
+    .goal-pill {
+        flex: 1;                           /* 4 equal buttons across the full width */
+        padding: 8px 0;
+        text-align: center;
+    }
+
+    .week-bars {
+        gap: 5px;
+    }
+
+    .wb-track {
+        height: 60px;
+        max-width: 22px;
+    }
+
+    .streak-badge {
+        font-size: 12px;
+    }
+
+    .tip {
+        padding: 14px;
+    }
+}
