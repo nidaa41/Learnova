@@ -8,7 +8,7 @@ import bcrypt
 from bson import ObjectId
 from dotenv import load_dotenv
 from flask import (Flask, render_template, request, redirect, url_for, session,
-                   jsonify, flash, send_from_directory)
+                   jsonify, flash, send_from_directory, Response)
 from google import genai
 from google.genai import types
 from pydantic import BaseModel
@@ -25,6 +25,12 @@ if not os.getenv("SECRET_KEY"):
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY")
+
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,     # JavaScript can't read the login cookie
+    SESSION_COOKIE_SAMESITE="Lax",    # basic protection against cross-site requests
+    SESSION_COOKIE_SECURE=os.getenv("PRODUCTION") == "1",  # HTTPS-only cookie when deployed
+)
 app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024  # 10 MB max upload (PDFs); photos are checked separately
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -57,6 +63,10 @@ summaries = db["summaries"]
 study_logs = db["study_logs"]
 study_logs.create_index([("user_id", 1), ("date", 1)], unique=True)  # one record per user per day
 
+avatars = db["avatars"]
+avatars.create_index("user_id", unique=True)
+
+AVATAR_MIME = {"png": "image/png", "jpg": "image/jpeg", "webp": "image/webp"}
 
 # ===== Gemini setup (one client for the whole app) =====
 gemini = genai.Client(
@@ -818,67 +828,6 @@ def detect_image_type(header):
     if header[:4] == b"RIFF" and header[8:12] == b"WEBP":
         return "webp"
     return None
-
-
-def delete_avatar_files(user_id):
-    for ext in ("png", "jpg", "webp"):
-        path = os.path.join(AVATAR_FOLDER, f"{user_id}.{ext}")
-        if os.path.exists(path):
-            os.remove(path)
-
-
-@app.route("/profile/avatar", methods=["POST"])
-@login_required
-def upload_avatar():
-    file = request.files.get("avatar")
-    if not file or file.filename == "":
-        flash("Please choose an image first.", "avatar_error")
-        return redirect(url_for("profile"))
-    header = file.read(16)
-    file.seek(0)
-    file.seek(0, os.SEEK_END)
-    size = file.tell()
-    file.seek(0)
-    if size > AVATAR_MAX_BYTES:
-        flash("That image is too big. Please choose one under 2 MB.", "avatar_error")
-        return redirect(url_for("profile"))
-    ext = detect_image_type(header)
-    if not ext:
-        flash("Please upload a PNG, JPG or WEBP image.", "avatar_error")
-        return redirect(url_for("profile"))
-
-    uid = session["user_id"]
-    delete_avatar_files(uid)  # remove the old photo, whatever its type
-    file.save(os.path.join(AVATAR_FOLDER, f"{uid}.{ext}"))
-
-    version = int(time.time())  # changes the image URL so browsers don't show the old one
-    users.update_one({"_id": ObjectId(uid)}, {"$set": {"avatar_ext": ext, "avatar_v": version}})
-    session["avatar"] = version
-
-    flash("Your photo has been updated.", "avatar_success")
-    return redirect(url_for("profile"))
-
-
-@app.route("/profile/avatar/remove", methods=["POST"])
-@login_required
-def remove_avatar():
-    uid = session["user_id"]
-    delete_avatar_files(uid)
-    users.update_one({"_id": ObjectId(uid)}, {"$unset": {"avatar_ext": "", "avatar_v": ""}})
-    session.pop("avatar", None)
-    flash("Your photo has been removed.", "avatar_success")
-    return redirect(url_for("profile"))
-
-
-@app.route("/my-avatar")
-@login_required
-def my_avatar():
-    user = current_user()
-    ext = user.get("avatar_ext") if user else None
-    if not ext:
-        return "", 404
-    return send_from_directory(AVATAR_FOLDER, f"{session['user_id']}.{ext}")
-
 
 @app.errorhandler(413)
 def file_too_large(e):
